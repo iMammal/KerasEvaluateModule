@@ -4,6 +4,9 @@ from tensorflow.keras.callbacks import TensorBoard
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import roc_curve, auc
 import numpy as np
+import matplotlib.pyplot as plt
+
+plt.style.use('ggplot')
 
 # fix random seed for reproducibility
 seed = 7
@@ -60,11 +63,12 @@ plt.plot([0, 1], [0, 1], 'k--')
 for model_name in history_dict:
     model = history_dict[model_name][1]
 
-    Y_pred = model.predict(X_test)
-    fpr, tpr, threshold = roc_curve(Y_test.ravel(), Y_pred.ravel())
+    Y_pred = model.predict(X[test])
+    fpr, tpr, threshold = roc_curve(Y[test].ravel(), Y_pred.ravel())
 
     plt.plot(fpr, tpr, label='{}, AUC = {:.3f}'.format(model_name, auc(fpr, tpr)))
 plt.xlabel('False positive rate')
 plt.ylabel('True positive rate')
 plt.title('ROC curve')
-plt.legend();
+plt.legend()
+plt.show()

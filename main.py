@@ -54,21 +54,22 @@ for train, test in kfold.split(X, Y):
     cvscores.append(scores[1] * 100)
 
     history_dict[model.name] = [history_callback, model]
-
-print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores), np.std(cvscores)))
-
-plt.figure(figsize=(10, 10))
-plt.plot([0, 1], [0, 1], 'k--')
-
-for model_name in history_dict:
-    model = history_dict[model_name][1]
+    # model = history_dict[model_name][1]
 
     Y_pred = model.predict(X[test])
     fpr, tpr, threshold = roc_curve(Y[test].ravel(), Y_pred.ravel())
 
-    plt.plot(fpr, tpr, label='{}, AUC = {:.3f}'.format(model_name, auc(fpr, tpr)))
+    plt.plot(fpr, tpr, label='{}, AUC = {:.3f}'.format(model.name, auc(fpr, tpr)))
+
+print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores), np.std(cvscores)))
+
+# plt.figure(figsize=(10, 10))
+# plt.plot([0, 1], [0, 1], 'k--')
+
+# for model_name in history_dict:
+
 plt.xlabel('False positive rate')
 plt.ylabel('True positive rate')
 plt.title('ROC curve')
-plt.legend()
+# plt.legend()
 plt.show()

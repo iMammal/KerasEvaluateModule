@@ -2,9 +2,12 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.callbacks import TensorBoard
 from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_curve, auc
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.svm import SVC
 
 plt.style.use('ggplot')
 
@@ -30,44 +33,58 @@ cvscores = []
 
 k = 0
 for train, test in kfold.split(X, Y):
-    # create model
-    model = Sequential()
-    model.add(Dense(16, input_dim=5, activation='relu'))
-    # model.add(Dense(20, activation='relu'))
 
-    k = k + 1
     modelDepth = k % 3
-    for i in range(modelDepth):
-        model.add(Dense(80-20*i, activation='relu'))
+    k = k + 1
 
-    model.add(Dense(1, activation='sigmoid'))
-    # model.name = "Dense2Layers"
+    # create model
 
-    # Compile model
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    if(modelDepth):
+        model = Sequential()
+        model.add(Dense(16, input_dim=5, activation='relu'))
+        # model.add(Dense(20, activation='relu'))
+        for i in range(modelDepth):
+            model.add(Dense(80-20*i, activation='relu'))
+        model.add(Dense(1, activation='sigmoid'))
+        # model.name = "Dense2Layers"
+
+        # Compile model
+        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    else:
+        model=SVC(kernel='linear')
 
     # Fit the model
-    history_callback = model.fit(X[train], Y[train],
+    if(modelDepth):
+        history_callback = model.fit(X[train], Y[train],
                                  epochs=150,
                                  batch_size=10,
                                  verbose=0,
                                  validation_data=(X[test], Y[test]),
                                  callbacks=[cb])
+    else:
+        model.fit(X[train], Y[train])
 
     # evaluate the model
-    scores = model.evaluate(X[test], Y[test], verbose=0)
-    print("%s: %.2f%%" % (model.metrics_names[1], scores[1] * 100))
-    cvscores.append(scores[1] * 100)
+    if(modelDepth):
+        scores = model.evaluate(X[test], Y[test], verbose=0)
+        print("%s: %.2f%%" % (model.metrics_names[1], scores[1] * 100))
+        cvscores.append(scores[1] * 100)
 
-    history_dict[model.name] = [history_callback, model]
-    # model = history_dict[model_name][1]
+        history_dict[model.name] = [history_callback, model]
+        # model = history_dict[model_name][1]
+
 
     Y_pred = model.predict(X[test])
     fpr, tpr, threshold = roc_curve(Y[test].ravel(), Y_pred.ravel())
 
-    plt.plot(fpr, tpr, label='{}, AUC = {:.3f}'.format(model.name, auc(fpr, tpr)))
+    if(modelDepth):
+        plt.plot(fpr, tpr, label='{}, AUC = {:.3f}'.format(model.name, auc(fpr, tpr)))
 
-print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores), np.std(cvscores)))
+        print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores), np.std(cvscores)))
+
+    else:
+        print("SVM: %.2f",auc(fpr,tpr))
+        plt.plot(fpr, tpr, label='{}, AUC = {:.3f}'.format("SVM", auc(fpr, tpr)))
 
 # plt.figure(figsize=(10, 10))
 # plt.plot([0, 1], [0, 1], 'k--')

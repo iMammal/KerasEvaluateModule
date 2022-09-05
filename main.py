@@ -28,12 +28,18 @@ Y = dataset[:, 5]
 kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=seed)
 cvscores = []
 
+k = 0
 for train, test in kfold.split(X, Y):
     # create model
     model = Sequential()
     model.add(Dense(16, input_dim=5, activation='relu'))
-    model.add(Dense(20, activation='relu'))
-    model.add(Dense(15, activation='relu'))
+    # model.add(Dense(20, activation='relu'))
+
+    k = k + 1
+    modelDepth = k % 3
+    for i in range(modelDepth):
+        model.add(Dense(80-20*i, activation='relu'))
+
     model.add(Dense(1, activation='sigmoid'))
     # model.name = "Dense2Layers"
 

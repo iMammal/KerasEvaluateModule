@@ -13,6 +13,7 @@ import keras_tuner as kt
 
 
 class SequentialModel(kt.HyperModel):
+    model = keras.Model
     def __init__(self, input_shape):
         self.input_shape = input_shape
 
@@ -28,7 +29,25 @@ class SequentialModel(kt.HyperModel):
 
         # model.add(Dense(1, activation='sigmoid'))
 
-        return keras.Model(inputs=inputs, outputs=outputs)
+        model = keras.Model(inputs=inputs, outputs=outputs)
+
+        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+        return model
+
+        # model.compile(loss, optimizer, metrics)
+
+    #vdef fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs):
+    #    super(kt.HyperModel,self).fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs)
+
+    def fitmodel(self,X,Y,vd,cb):
+        model.fit(X, Y,
+                  epochs=150,
+                  batch_size=10,
+                  verbose=0,
+                  validation_data=vd,
+                  callbacks=[cb])
+
 
 
 def build_sequential_model():
@@ -90,19 +109,14 @@ for train, test in kfold.split(X, Y):
         model = hypermodel.build(inithp)
         # model.build()
         # Compile model
-        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+        # hypermodel.modelcompile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     else:
         model=SVC(kernel='linear')
 
     # Fit the model
     if(modelDepth):
-        history_callback = model.fit(X[train], Y[train],
-                                 epochs=150,
-                                 batch_size=10,
-                                 verbose=0,
-                                 validation_data=(X[test], Y[test]),
-                                 callbacks=[cb])
+        history_callback = hypermodel.fitmodel(X[train], Y[train],(X[test], Y[test]),cb)
     else:
         model.fit(X[train], Y[train])
 
@@ -120,13 +134,13 @@ for train, test in kfold.split(X, Y):
     fpr, tpr, threshold = roc_curve(Y[test].ravel(), Y_pred.ravel())
 
     if(modelDepth):
-        plt.plot(fpr, tpr, 'k', fpr, tpr, 'bo', label='{}, AUC = {:.3f}'.format(model.name, auc(fpr, tpr)))
+        plt.plot(fpr, tpr, 'k', label='{}, AUC = {:.3f}'.format(model.name, auc(fpr, tpr)))
 
         print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores), np.std(cvscores)))
 
     else:
         print("SVM: %.2f",auc(fpr,tpr))
-        plt.plot(fpr, tpr, 'k', fpr, tpr, 'bo', label='{}, AUC = {:.3f}'.format("SVM", auc(fpr, tpr)))
+        plt.plot(fpr, tpr, 'k', label='{}, AUC = {:.3f}'.format("SVM", auc(fpr, tpr)))
 
 # plt.figure(figsize=(10, 10))
 # plt.plot([0, 1], [0, 1], 'k--')

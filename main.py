@@ -15,10 +15,13 @@ import keras_tuner as kt
 class SequentialModel(kt.HyperModel):
     cvscores = []
     modelscores = []
+    predictions = []
     history_dict = {}
     model = keras.Model
+    name = "Sequential"
     def __init__(self, input_shape):
         self.input_shape = input_shape
+
 
     def build(self, hp):
         """Builds a Sequential model."""
@@ -40,32 +43,39 @@ class SequentialModel(kt.HyperModel):
 
         # model.compile(loss, optimizer, metrics)
 
-    def modelevaluate(self, X, Y, verbose=0):
+    def modelevaluate(self, xtest, ytest, verbose=0):
 
-        modelscores = model.evaluate(X[test], Y[test], verbose=0)
+        self.modelscores = model.evaluate(xtest, ytest, verbose=0)
 
-        return modelscores
+        return self.modelscores
 
-    def modelcvscores(self,scores=modelscores):
-        print("%s: %.2f%%" % (model.metrics_names[1], scores[1] * 100))
-        cvscores.append(scores[1] * 100)
+    def modelcvscores(self):
+        print("%s: %.2f%%" % (model.metrics_names[1], self.modelscores[1] * 100))
+        self.cvscores.append(self.modelscores[1] * 100)
 
-        history_dict[model.name] = [history_callback, model]
+        self.history_dict[model.name] = [self.history_callback, self.model]
         # model = history_dict[model_name][1]
 
+    def modelpredict(self, xtest, verbose=0):
+        self.predictions = model.predict(xtest)
+        return predictions
 
-    #vdef fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs):
+    def printstats(self):
+        print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
+
+
+    # vdef fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs):
     #    super(kt.HyperModel,self).fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs)
 
     def fitmodel(self,X,Y,vd,cb):
-        model.fit(X, Y,
+        self.history_callback = model.fit(X, Y,
                   epochs=150,
                   batch_size=10,
                   verbose=0,
                   validation_data=vd,
                   callbacks=[cb])
 
-
+        return self.history_callback
 
 def build_sequential_model():
     # global model
@@ -145,9 +155,9 @@ for train, test in kfold.split(X, Y):
     fpr, tpr, threshold = roc_curve(Y[test].ravel(), Y_pred.ravel())
 
     if(modelDepth):
-        plt.plot(fpr, tpr, 'k', label='{}, AUC = {:.3f}'.format(model.name, auc(fpr, tpr)))
+        plt.plot(fpr, tpr, 'k', label='{}, AUC = {:.3f}'.format(hypermodel.name, auc(fpr, tpr)))
 
-        print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores), np.std(cvscores)))
+        hypermodel.printstats()
 
     else:
         print("SVM: %.2f",auc(fpr,tpr))

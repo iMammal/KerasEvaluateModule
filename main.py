@@ -57,8 +57,8 @@ class SequentialModel(kt.HyperModel):
         # model = history_dict[model_name][1]
 
     def modelpredict(self, xtest, verbose=0):
-        self.predictions = model.predict(xtest)
-        return predictions
+        self.predictions = self.model.predict(xtest)
+        return self.predictions
 
     def printstats(self):
         print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
@@ -76,6 +76,37 @@ class SequentialModel(kt.HyperModel):
                   callbacks=[cb])
 
         return self.history_callback
+
+class SVMModel(kt.HyperModel):
+    cvscores = []
+    modelscores = []
+    predictions = []
+    history_dict = {}
+    model = keras.Model
+    name = "SVM"
+    # model = SVC(kernel='linear')
+    def build(self, hp):
+        self.model = SVC(kernel='linear')
+        return self.model
+    def fitmodel(self,X,Y,vd=[],cb=[]):
+        self.model.fit(X, Y)
+
+    def modelcvscores(self):
+        print("%s: %.2f%%" % (model.metrics_names[1], self.modelscores[1] * 100))
+        self.cvscores.append(self.modelscores[1] * 100)
+
+        self.history_dict[model.name] = [self.history_callback, self.model]
+        # model = history_dict[model_name][1]
+        #
+    def modelpredict(self, xtest, verbose=0):
+        self.predictions = self.model.predict(xtest)
+        return self.predictions
+    def modelevaluate(self, xtest, ytest, verbose=0):
+        self.modelscores = model.score(xtest, ytest)
+        return self.modelscores
+
+    def printstats(self):
+        print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
 
 def build_sequential_model():
     # global model
@@ -114,7 +145,7 @@ kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=seed)
 k = 0
 
 
-
+hypermodel = {}
 
 
 for train, test in kfold.split(X, Y):
@@ -123,45 +154,46 @@ for train, test in kfold.split(X, Y):
     k += 1
 
     # create model
+    inithp = kt.HyperParameters()
 
     if(modelDepth):
         # model = build_sequential_model()
         input_shape = (X[train].shape[1],)
         # (None, 28, 28, 1) #
-        hypermodel = SequentialModel(input_shape)
-        inithp = kt.HyperParameters()
-        model = hypermodel.build(inithp)
+        hypermodel[1] = SequentialModel(input_shape)
+        model = hypermodel[1].build(inithp)
         # model.build()
         # Compile model
         # hypermodel.modelcompile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     else:
-        model=SVC(kernel='linear')
+        hypermodel[0] = SVMModel()
+        model = hypermodel[0].build(inithp)
 
     # Fit the model
     if(modelDepth):
-        history_callback = hypermodel.fitmodel(X[train], Y[train],(X[test], Y[test]),cb)
+        history_callback = hypermodel[1].fitmodel(X[train], Y[train],(X[test], Y[test]),cb)
     else:
-        model.fit(X[train], Y[train])
+        hypermodel[0].fitmodel(X[train], Y[train])
 
     # evaluate the model
     if(modelDepth):
-        hypermodel.modelevaluate(X[test], Y[test], verbose=0)
+        hypermodel[1].modelevaluate(X[test], Y[test], verbose=0)
 
-        hypermodel.modelcvscores()
+        hypermodel[1].modelcvscores()
 
 
-    Y_pred = model.predict(X[test])
+    Y_pred = hypermodel[modelDepth].modelpredict(X[test])
     fpr, tpr, threshold = roc_curve(Y[test].ravel(), Y_pred.ravel())
 
-    if(modelDepth):
-        plt.plot(fpr, tpr, 'k', label='{}, AUC = {:.3f}'.format(hypermodel.name, auc(fpr, tpr)))
+    #if(modelDepth):
+    plt.plot(fpr, tpr, 'k', label='{}, AUC = {:.3f}'.format(hypermodel[modelDepth].name, auc(fpr, tpr)))
 
-        hypermodel.printstats()
+    hypermodel[modelDepth].printstats()
 
-    else:
-        print("SVM: %.2f",auc(fpr,tpr))
-        plt.plot(fpr, tpr, 'k', label='{}, AUC = {:.3f}'.format("SVM", auc(fpr, tpr)))
+    # else:
+    #    print("SVM: %.2f",auc(fpr,tpr))
+    #    plt.plot(fpr, tpr, 'k', label='{}, AUC = {:.3f}'.format("SVM", auc(fpr, tpr)))
 
 # plt.figure(figsize=(10, 10))
 # plt.plot([0, 1], [0, 1], 'k--')

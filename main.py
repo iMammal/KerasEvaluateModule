@@ -13,6 +13,9 @@ import keras_tuner as kt
 
 
 class SequentialModel(kt.HyperModel):
+    cvscores = []
+    modelscores = []
+    history_dict = {}
     model = keras.Model
     def __init__(self, input_shape):
         self.input_shape = input_shape
@@ -36,6 +39,20 @@ class SequentialModel(kt.HyperModel):
         return model
 
         # model.compile(loss, optimizer, metrics)
+
+    def modelevaluate(self, X, Y, verbose=0):
+
+        modelscores = model.evaluate(X[test], Y[test], verbose=0)
+
+        return modelscores
+
+    def modelcvscores(self,scores=modelscores):
+        print("%s: %.2f%%" % (model.metrics_names[1], scores[1] * 100))
+        cvscores.append(scores[1] * 100)
+
+        history_dict[model.name] = [history_callback, model]
+        # model = history_dict[model_name][1]
+
 
     #vdef fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs):
     #    super(kt.HyperModel,self).fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs)
@@ -71,8 +88,6 @@ plt.style.use('ggplot')
 seed = 7
 np.random.seed(seed)
 
-history_dict = {}
-
 # TensorBoard Callback
 cb = TensorBoard()
 
@@ -85,7 +100,6 @@ Y = dataset[:, 5]
 
 # define 10-fold cross validation test harness
 kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=seed)
-cvscores = []
 
 k = 0
 
@@ -96,7 +110,7 @@ k = 0
 for train, test in kfold.split(X, Y):
 
     modelDepth = k % 3
-    k = k + 1
+    k += 1
 
     # create model
 
@@ -122,12 +136,9 @@ for train, test in kfold.split(X, Y):
 
     # evaluate the model
     if(modelDepth):
-        scores = model.evaluate(X[test], Y[test], verbose=0)
-        print("%s: %.2f%%" % (model.metrics_names[1], scores[1] * 100))
-        cvscores.append(scores[1] * 100)
+        hypermodel.modelevaluate(X[test], Y[test], verbose=0)
 
-        history_dict[model.name] = [history_callback, model]
-        # model = history_dict[model_name][1]
+        hypermodel.modelcvscores()
 
 
     Y_pred = model.predict(X[test])

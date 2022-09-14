@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestRegressor
 import keras_tuner as kt
 
 
@@ -35,29 +36,29 @@ class SequentialModel(kt.HyperModel):
 
         # model.add(Dense(1, activation='sigmoid'))
 
-        model = keras.Model(inputs=inputs, outputs=outputs)
+        self.model = keras.Model(inputs=inputs, outputs=outputs)
 
-        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+        self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-        return model
+        return self.model
 
         # model.compile(loss, optimizer, metrics)
 
     def modelevaluate(self, xtest, ytest, verbose=0):
 
-        self.modelscores = model.evaluate(xtest, ytest, verbose=0)
+        self.modelscores = self.model.evaluate(xtest, ytest, verbose=0)
 
         return self.modelscores
 
     def modelcvscores(self):
-        print("%s: %.2f%%" % (model.metrics_names[1], self.modelscores[1] * 100))
+        print("%s: %.2f%%" % (self.model.metrics_names[1], self.modelscores[1] * 100))
         self.cvscores.append(self.modelscores[1] * 100)
 
-        self.history_dict[model.name] = [self.history_callback, self.model]
+        self.history_dict[self.model.name] = [self.history_callback, self.model]
         # model = history_dict[model_name][1]
 
     def modelpredict(self, xtest, verbose=0):
-        self.predictions = model.predict(xtest)
+        self.predictions = self.model.predict(xtest)
         return self.predictions
 
     def printstats(self):
@@ -68,7 +69,7 @@ class SequentialModel(kt.HyperModel):
     #    super(kt.HyperModel,self).fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs)
 
     def fitmodel(self,X,Y,vd,cb):
-        self.history_callback = model.fit(X, Y,
+        self.history_callback = self.model.fit(X, Y,
                   epochs=150,
                   batch_size=10,
                   verbose=0,
@@ -76,6 +77,39 @@ class SequentialModel(kt.HyperModel):
                   callbacks=[cb])
 
         return self.history_callback
+
+class RandomForestRegressorModel(kt.HyperModel):
+    cvscores = []
+    modelscores = []
+    predictions = []
+    history_dict = {}
+    model = keras.Model
+    name = "RandomForestRegressor"
+
+    def build(self, hp):
+        self.model = RandomForestRegressor(n_estimators=20, random_state=0)
+        return self.model
+    def fitmodel(self,X,Y,vd=[],cb=[]):
+        self.model.fit(X, Y)
+
+    def modelcvscores(self):
+        # print("%s: %.2f%%" % (self.model.metrics_names[1], self.modelscores[1] * 100))
+        # self.cvscores.append(self.modelscores[1] * 100)
+
+        # self.history_dict[model.name] = [self.history_callback, self.model]
+        # model = history_dict[model_name][1]
+        return
+
+    def modelpredict(self, xtest, verbose=0):
+        self.predictions = self.model.predict(xtest)
+        return self.predictions
+    def modelevaluate(self, xtest, ytest, verbose=0):
+        # self.modelscores = model.score(xtest, ytest)
+        return self.modelscores
+
+    def printstats(self):
+        # print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
+        print("RF stats...")
 
 class SVMModel(kt.HyperModel):
     cvscores = []
@@ -145,9 +179,7 @@ kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=seed)
 
 # k = 0
 
-
 hypermodel = {}
-
 
 for train, test in kfold.split(X, Y):
 
@@ -160,28 +192,22 @@ for train, test in kfold.split(X, Y):
     hypermodel[0] = SVMModel()
     model = hypermodel[0].build(inithp)
 
-    #if(modelDepth):
-        # model = build_sequential_model()
     input_shape = (X[train].shape[1],)
-        # (None, 28, 28, 1) #
+
     hypermodel[1] = SequentialModel(input_shape)
     model = hypermodel[1].build(inithp)
-        # model.build()
-        # Compile model
-        # hypermodel.modelcompile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    #else:
+    hypermodel[2] = RandomForestRegressorModel()
+    model = hypermodel[2].build(inithp)
 
     # Fit the model
-    #if(modelDepth):
     history_callback = hypermodel[1].fitmodel(X[train], Y[train],(X[test], Y[test]),cb)
-    #else:
     hypermodel[0].fitmodel(X[train], Y[train])
+    hypermodel[2].fitmodel(X[train], Y[train])
 
     # evaluate the model
-    #if(modelDepth):
 
-    for k in range(0,2):
+    for k in range(0,3):
         hypermodel[k].modelevaluate(X[test], Y[test], verbose=0)
 
         hypermodel[k].modelcvscores()
@@ -189,7 +215,6 @@ for train, test in kfold.split(X, Y):
         Y_pred = hypermodel[k].modelpredict(X[test])
         fpr, tpr, threshold = roc_curve(Y[test].ravel(), Y_pred.ravel())
 
-    #if(modelDepth):
         plt.plot(fpr, tpr, 'k', label='{}, AUC = {:.3f}'.format(hypermodel[k].name, auc(fpr, tpr)))
 
         hypermodel[k].printstats()
@@ -203,7 +228,7 @@ for train, test in kfold.split(X, Y):
 
 # for model_name in history_dict:
 
-plt.xlabel(                                                        'False positive rate')
+plt.xlabel('False positive rate')
 plt.ylabel('True positive rate')
 plt.title('ROC curve')
 plt.legend()

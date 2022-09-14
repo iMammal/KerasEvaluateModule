@@ -57,14 +57,14 @@ class SequentialModel(kt.HyperModel):
         # model = history_dict[model_name][1]
 
     def modelpredict(self, xtest, verbose=0):
-        self.predictions = self.model.predict(xtest)
+        self.predictions = model.predict(xtest)
         return self.predictions
 
     def printstats(self):
         print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
 
 
-    # vdef fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs):
+    # def fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs):
     #    super(kt.HyperModel,self).fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs)
 
     def fitmodel(self,X,Y,vd,cb):
@@ -92,22 +92,23 @@ class SVMModel(kt.HyperModel):
         self.model.fit(X, Y)
 
     def modelcvscores(self):
-        print("%s: %.2f%%" % (model.metrics_names[1], self.modelscores[1] * 100))
-        self.cvscores.append(self.modelscores[1] * 100)
+        # print("%s: %.2f%%" % (self.model.metrics_names[1], self.modelscores[1] * 100))
+        # self.cvscores.append(self.modelscores[1] * 100)
 
-        self.history_dict[model.name] = [self.history_callback, self.model]
+        # self.history_dict[model.name] = [self.history_callback, self.model]
         # model = history_dict[model_name][1]
-        #
+        return
+
     def modelpredict(self, xtest, verbose=0):
         self.predictions = self.model.predict(xtest)
         return self.predictions
     def modelevaluate(self, xtest, ytest, verbose=0):
-        self.modelscores = model.score(xtest, ytest)
+        # self.modelscores = model.score(xtest, ytest)
         return self.modelscores
 
     def printstats(self):
-        print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
-
+        # print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
+        print("SVM stats...")
 def build_sequential_model():
     # global model
     model = Sequential()
@@ -142,7 +143,7 @@ Y = dataset[:, 5]
 # define 10-fold cross validation test harness
 kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=seed)
 
-k = 0
+# k = 0
 
 
 hypermodel = {}
@@ -150,46 +151,48 @@ hypermodel = {}
 
 for train, test in kfold.split(X, Y):
 
-    modelDepth = k % 3
-    k += 1
+    # modelDepth = k % 3
+    # k += 1
 
     # create model
     inithp = kt.HyperParameters()
 
-    if(modelDepth):
+    hypermodel[0] = SVMModel()
+    model = hypermodel[0].build(inithp)
+
+    #if(modelDepth):
         # model = build_sequential_model()
-        input_shape = (X[train].shape[1],)
+    input_shape = (X[train].shape[1],)
         # (None, 28, 28, 1) #
-        hypermodel[1] = SequentialModel(input_shape)
-        model = hypermodel[1].build(inithp)
+    hypermodel[1] = SequentialModel(input_shape)
+    model = hypermodel[1].build(inithp)
         # model.build()
         # Compile model
         # hypermodel.modelcompile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-    else:
-        hypermodel[0] = SVMModel()
-        model = hypermodel[0].build(inithp)
+    #else:
 
     # Fit the model
-    if(modelDepth):
-        history_callback = hypermodel[1].fitmodel(X[train], Y[train],(X[test], Y[test]),cb)
-    else:
-        hypermodel[0].fitmodel(X[train], Y[train])
+    #if(modelDepth):
+    history_callback = hypermodel[1].fitmodel(X[train], Y[train],(X[test], Y[test]),cb)
+    #else:
+    hypermodel[0].fitmodel(X[train], Y[train])
 
     # evaluate the model
-    if(modelDepth):
-        hypermodel[1].modelevaluate(X[test], Y[test], verbose=0)
+    #if(modelDepth):
 
-        hypermodel[1].modelcvscores()
+    for k in range(0,2):
+        hypermodel[k].modelevaluate(X[test], Y[test], verbose=0)
 
+        hypermodel[k].modelcvscores()
 
-    Y_pred = hypermodel[modelDepth].modelpredict(X[test])
-    fpr, tpr, threshold = roc_curve(Y[test].ravel(), Y_pred.ravel())
+        Y_pred = hypermodel[k].modelpredict(X[test])
+        fpr, tpr, threshold = roc_curve(Y[test].ravel(), Y_pred.ravel())
 
     #if(modelDepth):
-    plt.plot(fpr, tpr, 'k', label='{}, AUC = {:.3f}'.format(hypermodel[modelDepth].name, auc(fpr, tpr)))
+        plt.plot(fpr, tpr, 'k', label='{}, AUC = {:.3f}'.format(hypermodel[k].name, auc(fpr, tpr)))
 
-    hypermodel[modelDepth].printstats()
+        hypermodel[k].printstats()
 
     # else:
     #    print("SVM: %.2f",auc(fpr,tpr))
@@ -200,7 +203,7 @@ for train, test in kfold.split(X, Y):
 
 # for model_name in history_dict:
 
-plt.xlabel('False positive rate')
+plt.xlabel(                                                        'False positive rate')
 plt.ylabel('True positive rate')
 plt.title('ROC curve')
 plt.legend()

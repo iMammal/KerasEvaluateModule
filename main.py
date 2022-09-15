@@ -19,10 +19,10 @@ class SequentialModel(kt.HyperModel):
     predictions = []
     history_dict = {}
     model = keras.Model
-    name = "Sequential"
+    name = "Seq"
     def __init__(self, input_shape):
         self.input_shape = input_shape
-
+        self.name = "Seq"
 
     def build(self, hp):
         """Builds a Sequential model."""
@@ -84,8 +84,10 @@ class RandomForestRegressorModel(kt.HyperModel):
     predictions = []
     history_dict = {}
     model = keras.Model
-    name = "RandomForestRegressor"
+    name = "RF"
 
+    def __init__(self):
+        self.name = "RF"
     def build(self, hp):
         self.model = RandomForestRegressor(n_estimators=20, random_state=0)
         return self.model
@@ -119,6 +121,9 @@ class SVMModel(kt.HyperModel):
     model = keras.Model
     name = "SVM"
     # model = SVC(kernel='linear')
+
+    def __init__(self):
+        self.name = "SVM"
     def build(self, hp):
         self.model = SVC(kernel='linear')
         return self.model

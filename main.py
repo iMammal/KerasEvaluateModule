@@ -65,7 +65,8 @@ class SequentialModel(kt.HyperModel):
         self.predictions = self.model.predict(xtest)
         return self.predictions
 
-    def printstats(self):
+    def printstats(self,fpr,tpr):
+        print("Seq: %.2f",auc(fpr,tpr))
         print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
 
 
@@ -116,9 +117,10 @@ class RandomForestRegressorModel(kt.HyperModel):
         # self.modelscores = model.score(xtest, ytest)
         return self.modelscores
 
-    def printstats(self):
+    def printstats(self,fpr,tpr):
         # print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
-        print("RF stats...")
+        #print("RF stats...")
+        print("RF: %.2f",auc(fpr,tpr))
 
 class SVMModel(kt.HyperModel):
     cvscores = []
@@ -155,9 +157,10 @@ class SVMModel(kt.HyperModel):
         # self.modelscores = model.score(xtest, ytest)
         return self.modelscores
 
-    def printstats(self):
+    def printstats(self,fpr,tpr):
         # print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
-        print("SVM stats...")
+        print("SVM: %.2f",auc(fpr,tpr))
+        #print("SVM stats...")
 def build_sequential_model():
     # global model
     model = Sequential()
@@ -232,7 +235,7 @@ for train, test in kfold.split(X, Y):
 
         plt.plot(fpr, tpr, hypermodel[k].lineformat, label='{}, AUC = {:.3f}'.format(hypermodel[k].name, auc(fpr, tpr)))
 
-        hypermodel[k].printstats()
+        hypermodel[k].printstats(fpr, tpr)
 
     # else:
     #    print("SVM: %.2f",auc(fpr,tpr))

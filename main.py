@@ -20,9 +20,13 @@ class SequentialModel(kt.HyperModel):
     history_dict = {}
     model = keras.Model
     name = "Seq"
+    lineformat = '-'
+
     def __init__(self, input_shape):
         self.input_shape = input_shape
         self.name = "Seq"
+        self.lineformat = '-'
+
 
     def build(self, hp):
         """Builds a Sequential model."""
@@ -85,9 +89,12 @@ class RandomForestRegressorModel(kt.HyperModel):
     history_dict = {}
     model = keras.Model
     name = "RF"
+    lineformat = '--'
 
     def __init__(self):
         self.name = "RF"
+        self.lineformat = '--'
+
     def build(self, hp):
         self.model = RandomForestRegressor(n_estimators=20, random_state=0)
         return self.model
@@ -120,10 +127,13 @@ class SVMModel(kt.HyperModel):
     history_dict = {}
     model = keras.Model
     name = "SVM"
+    lineformat = ':'
     # model = SVC(kernel='linear')
 
     def __init__(self):
         self.name = "SVM"
+        self.lineformat = ':'
+
     def build(self, hp):
         self.model = SVC(kernel='linear')
         return self.model
@@ -180,7 +190,7 @@ X = dataset[:, 0:5]
 Y = dataset[:, 5]
 
 # define 10-fold cross validation test harness
-kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=seed)
+kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
 
 # k = 0
 
@@ -220,13 +230,13 @@ for train, test in kfold.split(X, Y):
         Y_pred = hypermodel[k].modelpredict(X[test])
         fpr, tpr, threshold = roc_curve(Y[test].ravel(), Y_pred.ravel())
 
-        plt.plot(fpr, tpr, 'k', label='{}, AUC = {:.3f}'.format(hypermodel[k].name, auc(fpr, tpr)))
+        plt.plot(fpr, tpr, hypermodel[k].lineformat, label='{}, AUC = {:.3f}'.format(hypermodel[k].name, auc(fpr, tpr)))
 
         hypermodel[k].printstats()
 
     # else:
     #    print("SVM: %.2f",auc(fpr,tpr))
-    #    plt.plot(fpr, tpr, 'k', label='{}, AUC = {:.3f}'.format("SVM", auc(fpr, tpr)))
+    #    plt.plot(fpr, tpr, label='{}, AUC = {:.3f}'.format("SVM", auc(fpr, tpr)))
 
 # plt.figure(figsize=(10, 10))
 # plt.plot([0, 1], [0, 1], 'k--')

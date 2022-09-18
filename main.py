@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestRegressor
 import keras_tuner as kt
-
+import time
 
 class SequentialModel(kt.HyperModel):
     cvscores = []
@@ -27,11 +27,6 @@ class SequentialModel(kt.HyperModel):
         self.input_shape = input_shape
         self.name = "Seq"
         self.lineformat = '-'
-<<<<<<< HEAD
-        #self.auc_history = np.array(self.auc_history)
-=======
-        self.auc_history = np.array(self.auc_history)
->>>>>>> 8b979514f9020fc26ff7e6c7ca1e13ff90f27715
 
     def build(self, hp):
         """Builds a Sequential model."""
@@ -101,11 +96,6 @@ class RandomForestRegressorModel(kt.HyperModel):
     def __init__(self):
         self.name = "RF"
         self.lineformat = '--'
-<<<<<<< HEAD
-        #self.auc_history = np.array(self.auc_history)
-=======
-        self.auc_history = np.array(self.auc_history)
->>>>>>> 8b979514f9020fc26ff7e6c7ca1e13ff90f27715
 
     def build(self, hp):
         self.model = RandomForestRegressor(n_estimators=20, random_state=0)
@@ -148,11 +138,6 @@ class SVMModel(kt.HyperModel):
     def __init__(self):
         self.name = "SVM"
         self.lineformat = ':'
-<<<<<<< HEAD
-        #self.auc_history = np.array(self.auc_history)
-=======
-        self.auc_history = np.array(self.auc_history)
->>>>>>> 8b979514f9020fc26ff7e6c7ca1e13ff90f27715
 
 
     def build(self, hp):

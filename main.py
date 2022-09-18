@@ -261,7 +261,10 @@ for k in range(0,3):
     auc_history.append(hypermodel[k].auc_history)
 
 auc_history = np.array(auc_history)
-hypermodel[k].auc_history.tofile(f"{csv_results_folder}\evaluate_auc_{date_now}.csv", ",")
+if os.environ.get('OS','') == "Windows_NT":
+    auc_history.tofile(f"{csv_results_folder}\evaluate_auc_{date_now}.csv", ",")
+else:
+    auc_history.tofile(f"{csv_results_folder}/evaluate_auc_{date_now}.csv", ",")
 
 plt.xlabel('False positive rate')
 plt.ylabel('True positive rate')

@@ -27,7 +27,7 @@ class SequentialModel(kt.HyperModel):
         self.input_shape = input_shape
         self.name = "Seq"
         self.lineformat = '-'
-        self.auc_history = np.array(auc_history)
+        #self.auc_history = np.array(self.auc_history)
 
     def build(self, hp):
         """Builds a Sequential model."""
@@ -97,7 +97,7 @@ class RandomForestRegressorModel(kt.HyperModel):
     def __init__(self):
         self.name = "RF"
         self.lineformat = '--'
-        self.auc_history = np.array(auc_history)
+        #self.auc_history = np.array(self.auc_history)
 
     def build(self, hp):
         self.model = RandomForestRegressor(n_estimators=20, random_state=0)
@@ -140,7 +140,7 @@ class SVMModel(kt.HyperModel):
     def __init__(self):
         self.name = "SVM"
         self.lineformat = ':'
-        self.auc_history =  = np.array(auc_history)
+        #self.auc_history = np.array(self.auc_history)
 
 
     def build(self, hp):
@@ -260,10 +260,10 @@ csv_results_folder = "csv-results"
 date_now = time.strftime("%Y-%m-%d")
 
 auc_history = []
-auc_history = np.array(auc_history)
 for k in range(0,3):
     auc_history.append(hypermodel[k].auc_history)
 
+auc_history = np.array(auc_history)
 hypermodel[k].auc_history.tofile(f"{csv_results_folder}\evaluate_auc_{date_now}.csv", ",")
 
 plt.xlabel('False positive rate')

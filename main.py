@@ -21,12 +21,13 @@ class SequentialModel(kt.HyperModel):
     model = keras.Model
     name = "Seq"
     lineformat = '-'
+    auc_history = []
 
     def __init__(self, input_shape):
         self.input_shape = input_shape
         self.name = "Seq"
         self.lineformat = '-'
-
+        self.auc_history = np.array(auc_history)
 
     def build(self, hp):
         """Builds a Sequential model."""
@@ -68,7 +69,7 @@ class SequentialModel(kt.HyperModel):
     def printstats(self,fpr,tpr):
         print("Seq: %.2f",auc(fpr,tpr))
         print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
-
+        self.auc_history.append(auc(fpr,tpr))
 
     # def fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs):
     #    super(kt.HyperModel,self).fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs)
@@ -91,10 +92,12 @@ class RandomForestRegressorModel(kt.HyperModel):
     model = keras.Model
     name = "RF"
     lineformat = '--'
+    auc_history = []
 
     def __init__(self):
         self.name = "RF"
         self.lineformat = '--'
+        self.auc_history = np.array(auc_history)
 
     def build(self, hp):
         self.model = RandomForestRegressor(n_estimators=20, random_state=0)
@@ -121,6 +124,7 @@ class RandomForestRegressorModel(kt.HyperModel):
         # print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
         #print("RF stats...")
         print("RF: %.2f",auc(fpr,tpr))
+        self.auc_history.append(auc(fpr,tpr))
 
 class SVMModel(kt.HyperModel):
     cvscores = []
@@ -131,10 +135,13 @@ class SVMModel(kt.HyperModel):
     name = "SVM"
     lineformat = ':'
     # model = SVC(kernel='linear')
+    auc_history = []
 
     def __init__(self):
         self.name = "SVM"
         self.lineformat = ':'
+        self.auc_history =  = np.array(auc_history)
+
 
     def build(self, hp):
         self.model = SVC(kernel='linear')
@@ -161,6 +168,9 @@ class SVMModel(kt.HyperModel):
         # print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
         print("SVM: %.2f",auc(fpr,tpr))
         #print("SVM stats...")
+        self.auc_history.append(auc(fpr,tpr))
+
+
 def build_sequential_model():
     # global model
     model = Sequential()
@@ -245,6 +255,16 @@ for train, test in kfold.split(X, Y):
 # plt.plot([0, 1], [0, 1], 'k--')
 
 # for model_name in history_dict:
+
+csv_results_folder = "csv-results"
+date_now = time.strftime("%Y-%m-%d")
+
+auc_history = []
+auc_history = np.array(auc_history)
+for k in range(0,3):
+    auc_history.append(hypermodel[k].auc_history)
+
+hypermodel[k].auc_history.tofile(f"{csv_results_folder}\evaluate_auc_{date_now}.csv", ",")
 
 plt.xlabel('False positive rate')
 plt.ylabel('True positive rate')

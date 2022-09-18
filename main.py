@@ -12,6 +12,12 @@ from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestRegressor
 import keras_tuner as kt
 import time
+import os
+
+os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+os.environ['TF_GPU_ALLOCATOR'] = 'cuda_malloc_async'
+policy = keras.mixed_precision.Policy('mixed_float16')
+keras.mixed_precision.set_global_policy(policy)
 
 class SequentialModel(kt.HyperModel):
     cvscores = []

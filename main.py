@@ -30,6 +30,7 @@ class SequentialModel(kt.HyperModel):
     name = "Seq"
     lineformat = '-'
     auc_history = []
+    confusion_history = []
 
     def __init__(self, input_shape):
         self.input_shape = input_shape
@@ -78,13 +79,14 @@ class SequentialModel(kt.HyperModel):
         print("Seq: %.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
         print("Seq: FP %.2f	FN %.2f	TP %.2f	TN %.2f",fp,fn,tp,tn)
         self.auc_history.append(auc(fpr,tpr))
+        self.confusion_history.append([fp,fn,tp,tn])
 
     # def fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs):
     #    super(kt.HyperModel,self).fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs)
 
     def fitmodel(self,X,Y,vd,cb):
         self.history_callback = self.model.fit(X, Y,
-                  epochs=150,
+                  epochs=10,
                   batch_size=10,
                   verbose=0,
                   validation_data=vd,
@@ -101,6 +103,7 @@ class RandomForestRegressorModel(kt.HyperModel):
     name = "RF"
     lineformat = '--'
     auc_history = []
+    confusion_history = []
 
     def __init__(self):
         self.name = "RF"
@@ -133,6 +136,7 @@ class RandomForestRegressorModel(kt.HyperModel):
         print("RF: AUC %.2f",auc(fpr,tpr))
         print("RF: FP %.2f	FN %.2f	TP %.2f	TN %.2f",fp,fn,tp,tn)
         self.auc_history.append(auc(fpr,tpr))
+        self.confusion_history.append([fp,fn,tp,tn])
 
 class SVMModel(kt.HyperModel):
     cvscores = []
@@ -144,6 +148,7 @@ class SVMModel(kt.HyperModel):
     lineformat = ':'
     # model = SVC(kernel='linear')
     auc_history = []
+    confusion_history = []
 
     def __init__(self):
         self.name = "SVM"
@@ -177,6 +182,7 @@ class SVMModel(kt.HyperModel):
         print("SVM: FP %.2f	FN %.2f	TP %.2f	TN %.2f",fp,fn,tp,tn)
         #print("SVM stats...")
         self.auc_history.append(auc(fpr,tpr))
+        self.confusion_history.append([fp,fn,tp,tn])
 
 
 def build_sequential_model():
@@ -282,14 +288,19 @@ csv_results_folder = "csv-results"
 date_now = time.strftime("%Y-%m-%d")
 
 auc_history = []
+confusion_history = []
 for k in range(0,3):
     auc_history.append(hypermodel[k].auc_history)
+    confusion_history.append(hypermodel[k].confusion_history)
 
 auc_history = np.array(auc_history)
+confusion_history = np.array(confusion_history)
 if os.environ.get('OS','') == "Windows_NT":
     auc_history.tofile(f"{csv_results_folder}\evaluate_auc_{date_now}.csv", ",")
+    confusion_history.tofile(f"{csv_results_folder}\evaluate_confusion_{date_now}.csv", ",")
 else:
     auc_history.tofile(f"{csv_results_folder}/evaluate_auc_{date_now}.csv", ",")
+    confusion_history.tofile(f"{csv_results_folder}/evaluate_confusion_{date_now}.csv", ",")
 
 plt.xlabel('False positive rate')
 plt.ylabel('True positive rate')

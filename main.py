@@ -4,7 +4,7 @@ from tensorflow import keras
 from tensorflow.keras.callbacks import TensorBoard
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, confusion_matrix
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -14,10 +14,12 @@ import keras_tuner as kt
 import time
 import os
 
-os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-os.environ['TF_GPU_ALLOCATOR'] = 'cuda_malloc_async'
+#os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+#os.environ['TF_GPU_ALLOCATOR'] = 'cuda_malloc_async'
 policy = keras.mixed_precision.Policy('mixed_float16')
-keras.mixed_precision.set_global_policy(policy)
+#keras.mixed_precision.set_global_policy(policy)
+print('Compute dtype: %s' % policy.compute_dtype)
+print('Variable dtype: %s' % policy.variable_dtype)
 
 class SequentialModel(kt.HyperModel):
     cvscores = []
@@ -71,9 +73,10 @@ class SequentialModel(kt.HyperModel):
         self.predictions = self.model.predict(xtest)
         return self.predictions
 
-    def printstats(self,fpr,tpr):
+    def printstats(self,fpr,tpr, tn, fp, fn, tp):
         print("Seq: %.2f",auc(fpr,tpr))
-        print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
+        print("Seq: %.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
+        print("Seq: FP %.2f	FN %.2f	TP %.2f	TN %.2f",fp,fn,tp,tn)
         self.auc_history.append(auc(fpr,tpr))
 
     # def fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs):
@@ -124,10 +127,11 @@ class RandomForestRegressorModel(kt.HyperModel):
         # self.modelscores = model.score(xtest, ytest)
         return self.modelscores
 
-    def printstats(self,fpr,tpr):
+    def printstats(self,fpr,tpr, tn, fp, fn, tp):
         # print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
         #print("RF stats...")
-        print("RF: %.2f",auc(fpr,tpr))
+        print("RF: AUC %.2f",auc(fpr,tpr))
+        print("RF: FP %.2f	FN %.2f	TP %.2f	TN %.2f",fp,fn,tp,tn)
         self.auc_history.append(auc(fpr,tpr))
 
 class SVMModel(kt.HyperModel):
@@ -167,9 +171,10 @@ class SVMModel(kt.HyperModel):
         # self.modelscores = model.score(xtest, ytest)
         return self.modelscores
 
-    def printstats(self,fpr,tpr):
+    def printstats(self,fpr,tpr, tn, fp, fn, tp):
         # print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
         print("SVM: %.2f",auc(fpr,tpr))
+        print("SVM: FP %.2f	FN %.2f	TP %.2f	TN %.2f",fp,fn,tp,tn)
         #print("SVM stats...")
         self.auc_history.append(auc(fpr,tpr))
 
@@ -188,6 +193,13 @@ def build_sequential_model():
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     return model
+
+def roundnum(x):
+    if (x>0.5):
+      return 1
+    else:
+      return 0
+
 
 plt.style.use('ggplot')
 
@@ -246,9 +258,16 @@ for train, test in kfold.split(X, Y):
         Y_pred = hypermodel[k].modelpredict(X[test])
         fpr, tpr, threshold = roc_curve(Y[test].ravel(), Y_pred.ravel())
 
+        #print(Y[test].ravel())
+        #print(Y_pred.ravel())
+        Y_predbin = [roundnum(y) for y in Y_pred.ravel()]
+        #print(Y_predbin)
+
+        tn, fp, fn, tp = confusion_matrix(Y[test].ravel(), Y_predbin).ravel()
+
         plt.plot(fpr, tpr, hypermodel[k].lineformat, label='{}, AUC = {:.3f}'.format(hypermodel[k].name, auc(fpr, tpr)))
 
-        hypermodel[k].printstats(fpr, tpr)
+        hypermodel[k].printstats(fpr, tpr, tn, fp, fn, tp)
 
     # else:
     #    print("SVM: %.2f",auc(fpr,tpr))

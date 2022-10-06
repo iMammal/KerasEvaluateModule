@@ -30,6 +30,8 @@ class SequentialModel(kt.HyperModel):
     model = keras.Model
     name = "Seq"
     lineformat = '-'
+    sp_history = []
+    sn_history = []
     auc_history = []
     acc_history = []
     mcc_history = []
@@ -48,9 +50,12 @@ class SequentialModel(kt.HyperModel):
 
         inputs = keras.Input(self.input_shape)    #shape=(28, 28, 1))
         x = keras.layers.Flatten()(inputs)
-        x = keras.layers.Dense(
-            units=hp.Choice("units", [32, 64, 128]), activation="relu"
-        )(x)
+        ###hpunits=hp.Choice("units", [40, 140, 90])   ### 32, 64, 128
+        hpunits=[40, 140, 90]   ### 32, 64, 128
+        x = keras.layers.Dense(units=hpunits[0], activation="relu")(x)
+        x = keras.layers.Dense(units=hpunits[1], activation="relu")(x)
+        x = keras.layers.Dense(units=hpunits[2], activation="relu")(x)
+        print("Added keras layers with units",hpunits)
         outputs = keras.layers.Dense(1, activation='sigmoid')(x)
 
         # model.add(Dense(1, activation='sigmoid'))
@@ -80,23 +85,26 @@ class SequentialModel(kt.HyperModel):
         self.predictions = self.model.predict(xtest)
         return self.predictions
 
-    def printstats(self,fpr,tpr, tn, fp, fn, tp, pre, mcc, acc, Fscore):
-        print("Seq: %.2f",auc(fpr,tpr))
+    def printstats(self,fpr,tpr, tn, fp, fn, tp, sp, sn, pre, mcc, acc, Fscore):
+        print("Seq: %.2f%%",auc(fpr,tpr))
         print("Seq: %.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
-        print("Seq: FP %.2f	FN %.2f	TP %.2f	TN %.2f",fp,fn,tp,tn)
+        print("Seq: FP %.2f%%	FN %.2f%%	TP %.2f%%	TN %.2f%%",fp,fn,tp,tn)
+        print("Seq: SP %.2f%%	SN %.2f%%	Pre %.2f%%	MCC %.2f%%	Acc %.2f%%	Fscore %.2f%%",sp,sn,pre,mcc,acc,Fscore)
         self.auc_history.append(auc(fpr,tpr))
         self.confusion_history.append([fp,fn,tp,tn])
         self.acc_history.append(acc)
         self.mcc_history.append(mcc)
         self.Fscore_history.append(Fscore)
         self.pre_history.append(pre)
+        self.sp_history.append(sp)
+        self.sn_history.append(sn)
 
     # def fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs):
     #    super(kt.HyperModel,self).fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs)
 
     def fitmodel(self,X,Y,vd,cb):
         self.history_callback = self.model.fit(X, Y,
-                  epochs=10,
+                  epochs=50,
                   batch_size=10,
                   verbose=0,
                   validation_data=vd,
@@ -112,6 +120,8 @@ class RandomForestRegressorModel(kt.HyperModel):
     model = keras.Model
     name = "RF"
     lineformat = '--'
+    sp_history = []
+    sn_history = []
     auc_history = []
     acc_history = []
     mcc_history = []
@@ -144,17 +154,20 @@ class RandomForestRegressorModel(kt.HyperModel):
         # self.modelscores = model.score(xtest, ytest)
         return self.modelscores
 
-    def printstats(self,fpr,tpr, tn, fp, fn, tp, pre, mcc, acc, Fscore):
+    def printstats(self,fpr,tpr, tn, fp, fn, tp, sp, sn, pre, mcc, acc, Fscore):
         # print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
         #print("RF stats...")
-        print("RF: AUC %.2f",auc(fpr,tpr))
-        print("RF: FP %.2f	FN %.2f	TP %.2f	TN %.2f",fp,fn,tp,tn)
+        print("RF: AUC %.2f%%",auc(fpr,tpr))
+        print("RF: FP %.2f%%	FN %.2f%%	TP %.2f%%	TN %.2f%%",fp,fn,tp,tn)
+        print("RF: SP %.2f%%	SN %.2f%%	Pre %.2f%%	MCC %.2f%%	Acc %.2f%%	Fscore %.2f%%",sp,sn,pre,mcc,acc,Fscore)
         self.auc_history.append(auc(fpr,tpr))
         self.confusion_history.append([fp,fn,tp,tn])
         self.acc_history.append(acc)
         self.mcc_history.append(mcc)
         self.Fscore_history.append(Fscore)
         self.pre_history.append(pre)
+        self.sp_history.append(sp)
+        self.sn_history.append(sn)
 
 class SVMModel(kt.HyperModel):
     cvscores = []
@@ -165,6 +178,8 @@ class SVMModel(kt.HyperModel):
     name = "SVM"
     lineformat = ':'
     # model = SVC(kernel='linear')
+    sp_history = []
+    sn_history = []
     auc_history = []
     acc_history = []
     mcc_history = []
@@ -198,10 +213,11 @@ class SVMModel(kt.HyperModel):
         # self.modelscores = model.score(xtest, ytest)
         return self.modelscores
 
-    def printstats(self,fpr,tpr, tn, fp, fn, tp,pre,acc,mcc,Fscore):
+    def printstats(self,fpr,tpr, tn, fp, fn, sp,sn,tp,pre,acc,mcc,Fscore):
         # print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
-        print("SVM: %.2f",auc(fpr,tpr))
-        print("SVM: FP %.2f	FN %.2f	TP %.2f	TN %.2f",fp,fn,tp,tn)
+        print("SVM: %.2f%%",auc(fpr,tpr))
+        print("SVM: FP %.2f%%	FN %.2f%%	TP %.2f%%	TN %.2f%%",fp,fn,tp,tn)
+        print("SVM: SP %.2f%%	SN %.2f%%	Pre %.2f%%	Acc %.2f%%	MCC %.2f%%	Fscore %.2f%%",sp,sn,pre,acc,mcc,Fscore)
         #print("SVM stats...")
         self.auc_history.append(auc(fpr,tpr))
         self.confusion_history.append([fp,fn,tp,tn])
@@ -209,6 +225,8 @@ class SVMModel(kt.HyperModel):
         self.mcc_history.append(mcc)
         self.Fscore_history.append(Fscore)
         self.pre_history.append(pre)
+        self.sp_history.append(sp)
+        self.sn_history.append(sn)
 
 def build_sequential_model():
     # global model
@@ -302,9 +320,11 @@ for train, test in kfold.split(X, Y):
         Fscore = (2 * pre * sn) / (pre + sn)
         MCC = (tp * tn - fp * tn) / sqrt((tp + fn) * (tp + fp) * (tn + fp) * (tn + fn))
 
+
+
         plt.plot(fpr, tpr, hypermodel[k].lineformat, label='{}, AUC = {:.3f}'.format(hypermodel[k].name, auc(fpr, tpr)))
 
-        hypermodel[k].printstats(fpr, tpr, tn, fp, fn, tp,pre,ACC,Fscore,MCC)
+        hypermodel[k].printstats(fpr, tpr, tn, fp, fn, tp,sp,sn,pre,ACC,Fscore,MCC)
 
     # else:
     #    print("SVM: %.2f",auc(fpr,tpr))
@@ -323,14 +343,30 @@ pre_history = [hypermodel[0].pre_history, hypermodel[1].pre_history, hypermodel[
 acc_history = [hypermodel[0].acc_history, hypermodel[1].acc_history, hypermodel[2].acc_history]
 mcc_history = [hypermodel[0].mcc_history, hypermodel[1].mcc_history, hypermodel[2].mcc_history]
 Fscore_history = [hypermodel[0].Fscore_history, hypermodel[1].Fscore_history, hypermodel[2].Fscore_history]
+sp_history = [hypermodel[0].sp_history, hypermodel[1].sp_history, hypermodel[2].sp_history]
+sn_history = [hypermodel[0].sn_history, hypermodel[1].sn_history, hypermodel[2].sn_history]
+
+auc_means = [np.mean(hypermodel[0].auc_history), np.mean(hypermodel[1].auc_history), np.mean(hypermodel[2].auc_history)] #, "AUC"]
+sp_means = [np.mean(hypermodel[0].sp_history), np.mean(hypermodel[1].sp_history), np.mean(hypermodel[2].sp_history)] #, "Specificity"]
+sn_means = [np.mean(hypermodel[0].sn_history), np.mean(hypermodel[1].sn_history), np.mean(hypermodel[2].sn_history)] #, "Sensitivity"]
+pre_means = [np.mean(hypermodel[0].pre_history), np.mean(hypermodel[1].pre_history), np.mean(hypermodel[2].pre_history)] #, "Precision"]
+acc_means = [np.mean(hypermodel[0].acc_history), np.mean(hypermodel[1].acc_history), np.mean(hypermodel[2].acc_history)] #, "Accuracy"]
+mcc_means = [np.mean(hypermodel[0].mcc_history), np.mean(hypermodel[1].mcc_history), np.mean(hypermodel[2].mcc_history)] #, "MCC"]
+Fscore_means = [np.mean(hypermodel[0].Fscore_history), np.mean(hypermodel[1].Fscore_history), np.mean(hypermodel[2].Fscore_history)] #, "Fscore"]
+
+#means_array = ([auc_means, sp_means, sn_means, pre_means, acc_means, mcc_means, Fscore_means])
+means_array = np.array([auc_means, sp_means, sn_means, pre_means, acc_means, mcc_means, Fscore_means])
 
 confusion_history = [hypermodel[0].confusion_history,hypermodel[1].confusion_history,hypermodel[2].confusion_history]
+
 auc_history = np.array(auc_history)
 confusion_history = np.array(confusion_history)
 pre_history = np.array(pre_history)
 acc_history = np.array(acc_history)
 mcc_history = np.array(mcc_history)
 Fscore_history = np.array(Fscore_history)
+sp_history = np.array(sp_history)
+sn_history = np.array(sn_history)
 
 #for k in range(0,3):
 #auc_history = np.append([auc_history,hypermodel[0].auc_history, auc_history,hypermodel[1].auc_history, auc_history,hypermodel[2].auc_history], axis=0)
@@ -345,7 +381,9 @@ if os.environ.get('OS','') == "Windows_NT":
     np.savetxt(f"{csv_results_folder}\evaluate_acc_{date_now}.csv", acc_history, delimiter=",",fmt='%-7.3f')
     np.savetxt(f"{csv_results_folder}\evaluate_mcc_{date_now}.csv", mcc_history, delimiter=",",fmt='%-7.3f')
     np.savetxt(f"{csv_results_folder}\evaluate_Fscore_{date_now}.csv", Fscore_history, delimiter=",",fmt='%-7.3f')
-
+    np.savetxt(f"{csv_results_folder}\evaluate_meanstats_{date_now}.csv", means_array, delimiter=",", fmt='%-7.3f', header="SVM,DNN,RFR", footer="Rows: AUC,SP,SN,PRE,ACC,MCC,FSCORE")
+    np.savetxt(f"{csv_results_folder}\evaluate_sp_{date_now}.csv", sp_history, delimiter=",",fmt='%-7.3f')
+    np.savetxt(f"{csv_results_folder}\evaluate_sn_{date_now}.csv", sn_history, delimiter=",",fmt='%-7.3f')
 else:
     np.savetxt(f"{csv_results_folder}/evaluate_auc_{date_now}.csv", auc_history, delimiter=",",fmt='%-7.3f')
     #np.savetxt(f"{csv_results_folder}/evaluate_confusion_{date_now}.csv", confusion_history, delimiter=",",fmt='%-7.3f')
@@ -353,6 +391,9 @@ else:
     np.savetxt(f"{csv_results_folder}/evaluate_acc_{date_now}.csv", acc_history, delimiter=",",fmt='%-7.3f')
     np.savetxt(f"{csv_results_folder}/evaluate_mcc_{date_now}.csv", mcc_history, delimiter=",",fmt='%-7.3f')
     np.savetxt(f"{csv_results_folder}/evaluate_Fscore_{date_now}.csv", Fscore_history, delimiter=",",fmt='%-7.3f')
+    np.savetxt(f"{csv_results_folder}/evaluate_meanstats_{date_now}.csv", means_array, delimiter=",", fmt='%-7.3f', header="SVM,DNN,RFR", footer="Rows: AUC,SP,SN,PRE,ACC,MCC,FSCORE")
+    np.savetxt(f"{csv_results_folder}/evaluate_sp_{date_now}.csv", sp_history, delimiter=",",fmt='%-7.3f')
+    np.savetxt(f"{csv_results_folder}/evaluate_sn_{date_now}.csv", sn_history, delimiter=",",fmt='%-7.3f')
 
 plt.xlabel('False positive rate')
 plt.ylabel('True positive rate')

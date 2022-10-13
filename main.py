@@ -3,6 +3,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow import keras
 from tensorflow.keras.callbacks import TensorBoard
 from sklearn.model_selection import StratifiedKFold
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_curve, auc, confusion_matrix
 import numpy as np
@@ -86,10 +87,10 @@ class SequentialModel(kt.HyperModel):
         return self.predictions
 
     def printstats(self,fpr,tpr, tn, fp, fn, tp, sp, sn, pre, mcc, acc, Fscore):
-        print("Seq: %.2f%%",auc(fpr,tpr))
+        print("Seq: %.2f%%" % (auc(fpr,tpr)))
         print("Seq: %.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
-        print("Seq: FP %.2f%%	FN %.2f%%	TP %.2f%%	TN %.2f%%",fp,fn,tp,tn)
-        print("Seq: SP %.2f%%	SN %.2f%%	Pre %.2f%%	MCC %.2f%%	Acc %.2f%%	Fscore %.2f%%",sp,sn,pre,mcc,acc,Fscore)
+        print("Seq: FP %.2f%%	FN %.2f%%	TP %.2f%%	TN %.2f%%" % (fp,fn,tp,tn))
+        print("Seq: SP %.2f%%	SN %.2f%%	Pre %.2f%%	MCC %.2f%%	Acc %.2f%%	Fscore %.2f%%" % (sp,sn,pre,mcc,acc,Fscore))
         self.auc_history.append(auc(fpr,tpr))
         self.confusion_history.append([fp,fn,tp,tn])
         self.acc_history.append(acc)
@@ -104,9 +105,9 @@ class SequentialModel(kt.HyperModel):
 
     def fitmodel(self,X,Y,vd,cb):
         self.history_callback = self.model.fit(X, Y,
-                  epochs=50,
-                  batch_size=10,
-                  verbose=0,
+                  epochs=510,
+                  batch_size=256,
+                  verbose=10,
                   validation_data=vd,
                   callbacks=[cb])
 
@@ -157,9 +158,9 @@ class RandomForestRegressorModel(kt.HyperModel):
     def printstats(self,fpr,tpr, tn, fp, fn, tp, sp, sn, pre, mcc, acc, Fscore):
         # print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
         #print("RF stats...")
-        print("RF: AUC %.2f%%",auc(fpr,tpr))
-        print("RF: FP %.2f%%	FN %.2f%%	TP %.2f%%	TN %.2f%%",fp,fn,tp,tn)
-        print("RF: SP %.2f%%	SN %.2f%%	Pre %.2f%%	MCC %.2f%%	Acc %.2f%%	Fscore %.2f%%",sp,sn,pre,mcc,acc,Fscore)
+        print("RF: AUC %.2f%%" % (auc(fpr,tpr)))
+        print("RF: FP %.2f%%	FN %.2f%%	TP %.2f%%	TN %.2f%%" % (fp,fn,tp,tn))
+        print("RF: SP %.2f%%	SN %.2f%%	Pre %.2f%%	MCC %.2f%%	Acc %.2f%%	Fscore %.2f%%" % (sp,sn,pre,mcc,acc,Fscore))
         self.auc_history.append(auc(fpr,tpr))
         self.confusion_history.append([fp,fn,tp,tn])
         self.acc_history.append(acc)
@@ -168,6 +169,65 @@ class RandomForestRegressorModel(kt.HyperModel):
         self.pre_history.append(pre)
         self.sp_history.append(sp)
         self.sn_history.append(sn)
+
+class GradientBoostingClassifierModel(kt.HyperModel):
+    cvscores = []
+    modelscores = []
+    predictions = []
+    history_dict = {}
+    model = keras.Model
+    name = "GB"
+    lineformat = '--'
+    sp_history = []
+    sn_history = []
+    auc_history = []
+    acc_history = []
+    mcc_history = []
+    Fscore_history = []
+    pre_history = []
+    confusion_history = []
+
+    def __init__(self):
+        self.name = "GB"
+        self.lineformat = ':'
+
+    def build(self, hp):
+        self.model = GradientBoostingClassifier()
+        #_estimators=20, random_state=0)
+        return self.model
+    def fitmodel(self,X,Y,vd=[],cb=[]):
+        self.model.fit(X, Y)
+
+    def modelcvscores(self):
+        # print("%s: %.2f%%" % (self.model.metrics_names[1], self.modelscores[1] * 100))
+        # self.cvscores.append(self.modelscores[1] * 100)
+
+        # self.history_dict[model.name] = [self.history_callback, self.model]
+        # model = history_dict[model_name][1]
+        return
+
+    def modelpredict(self, xtest, verbose=0):
+        self.predictions = self.model.predict(xtest)
+        return self.predictions
+    def modelevaluate(self, xtest, ytest, verbose=0):
+        # self.modelscores = model.score(xtest, ytest)
+        return self.modelscores
+
+    def printstats(self,fpr,tpr, tn, fp, fn, tp, sp, sn, pre, mcc, acc, Fscore):
+        # print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
+        #print("GB stats...")
+        print("GB: AUC %.2f%%" % (auc(fpr,tpr)))
+        print("GB: FP %.2f%%	FN %.2f%%	TP %.2f%%	TN %.2f%%" % (fp,fn,tp,tn))
+        print("GB: SP %.2f%%	SN %.2f%%	Pre %.2f%%	MCC %.2f%%	Acc %.2f%%	Fscore %.2f%%" %  (sp,sn,pre,mcc,acc,Fscore))
+        self.auc_history.append(auc(fpr,tpr))
+        self.confusion_history.append([fp,fn,tp,tn])
+        self.acc_history.append(acc)
+        self.mcc_history.append(mcc)
+        self.Fscore_history.append(Fscore)
+        self.pre_history.append(pre)
+        self.sp_history.append(sp)
+        self.sn_history.append(sn)
+
 
 class SVMModel(kt.HyperModel):
     cvscores = []
@@ -215,9 +275,9 @@ class SVMModel(kt.HyperModel):
 
     def printstats(self,fpr,tpr, tn, fp, fn, sp,sn,tp,pre,acc,mcc,Fscore):
         # print("%.2f%% (+/- %.2f%%)" % (np.mean(self.cvscores), np.std(self.cvscores)))
-        print("SVM: %.2f%%",auc(fpr,tpr))
-        print("SVM: FP %.2f%%	FN %.2f%%	TP %.2f%%	TN %.2f%%",fp,fn,tp,tn)
-        print("SVM: SP %.2f%%	SN %.2f%%	Pre %.2f%%	Acc %.2f%%	MCC %.2f%%	Fscore %.2f%%",sp,sn,pre,acc,mcc,Fscore)
+        print("SVM: %.2f%%" % (auc(fpr,tpr)))
+        print("SVM: FP %.2f%%	FN %.2f%%	TP %.2f%%	TN %.2f%%" % (fp,fn,tp,tn))
+        print("SVM: SP %.2f%%	SN %.2f%%	Pre %.2f%%	Acc %.2f%%	MCC %.2f%%	Fscore %.2f%%" % (sp,sn,pre,acc,mcc,Fscore))
         #print("SVM stats...")
         self.auc_history.append(auc(fpr,tpr))
         self.confusion_history.append([fp,fn,tp,tn])
@@ -260,11 +320,11 @@ np.random.seed(seed)
 cb = TensorBoard()
 
 # load Gencode  dataset
-dataset = np.loadtxt("NewGencode4DLTraining.csv", delimiter=",")
-
+#dataset = np.loadtxt("NewGencode4DLTraining.csv", delimiter=",")
+dataset = np.loadtxt("NewGencode4DLTraining2.csv", delimiter=",")
 # split into input (X) and output (Y) variables
-X = dataset[:, 0:5]
-Y = dataset[:, 5]
+X = dataset[:, 0:12]
+Y = dataset[:, 12]
 
 # define 10-fold cross validation test harness
 kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
@@ -281,8 +341,8 @@ for train, test in kfold.split(X, Y):
     # create model
     inithp = kt.HyperParameters()
 
-    hypermodel[0] = SVMModel()
-    model = hypermodel[0].build(inithp)
+    #hypermodel[0] = SVMModel()
+    #model = hypermodel[0].build(inithp)
 
     input_shape = (X[train].shape[1],)
 
@@ -292,10 +352,14 @@ for train, test in kfold.split(X, Y):
     hypermodel[2] = RandomForestRegressorModel()
     model = hypermodel[2].build(inithp)
 
+    hypermodel[0] = GradientBoostingClassifierModel()
+    model = hypermodel[0].build(inithp)
+
     # Fit the model
     history_callback = hypermodel[1].fitmodel(X[train], Y[train],(X[test], Y[test]),cb)
     hypermodel[0].fitmodel(X[train], Y[train])
     hypermodel[2].fitmodel(X[train], Y[train])
+    #hypermodel[3].fitmodel(X[train], Y[train])
 
     # evaluate the model
 
